@@ -96,6 +96,74 @@ docker-compose -f docker-compose.dev.yml down --timeout 0
 3. **Access the application**
    - Open http://localhost:3000 in your browser
 
+### CI/CD Pipeline
+
+The project includes comprehensive CI/CD workflows:
+
+#### **Automated Deployment (`deploy.yml`)**
+- **Triggers**: Push to `main`/`develop`, tags, manual dispatch
+- **Environments**: Development, Staging, Production
+- **Features**:
+  - Multi-node testing (18.x, 20.x)
+  - Security scanning with Trivy
+  - Docker image building with multi-platform support
+  - Automated deployment to staging/production
+  - Load testing with k6
+  - Performance monitoring
+  - Notifications and deployment summaries
+
+#### **Simple Deployment (`simple-deploy.yml`)**
+- **Triggers**: Push to `main`/`develop`, pull requests
+- **Features**:
+  - Basic testing and building
+  - Single-platform Docker builds
+  - Staging deployment
+  - Works with user packages (no organization permissions needed)
+
+#### **Manual Deployment (`manual-deploy.yml`)**
+- **Triggers**: Manual workflow dispatch
+- **Features**:
+  - Deploy to any environment on-demand
+  - Specify custom image tags
+  - Force redeploy options
+  - Validation and safety checks
+
+#### **Emergency Rollback (`rollback.yml`)**
+- **Triggers**: Manual workflow dispatch
+- **Features**:
+  - Quick rollback to previous versions
+  - Environment-specific rollbacks
+  - Safety validations
+  - Rollback verification
+
+#### **Workflow Usage**
+
+**Automated Deployment:**
+```bash
+# Push to main branch for production deployment
+git push origin main
+
+# Push to develop branch for staging deployment
+git push origin develop
+
+# Create a release tag for production
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+**Manual Deployment:**
+1. Go to GitHub Actions → Manual Deployment
+2. Click "Run workflow"
+3. Select environment and options
+4. Click "Run workflow"
+
+**Emergency Rollback:**
+1. Go to GitHub Actions → Emergency Rollback
+2. Click "Run workflow"
+3. Select environment and previous tag
+4. Provide rollback reason
+5. Click "Run workflow"
+
 
 ## 🧪 Testing
 
