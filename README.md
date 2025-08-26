@@ -41,12 +41,21 @@ See [Architecture Diagram](architecture-diagram.md) for detailed system design a
    npm install
    ```
 
-3. **Start the development server**
+3. **Check and fix dependencies (if needed)**
+   ```bash
+   # Check if package-lock.json is in sync
+   npm run check-deps
+   
+   # Fix package-lock.json if out of sync
+   npm run fix-deps
+   ```
+
+4. **Start the development server**
    ```bash
    npm run dev
    ```
 
-4. **Access the application**
+5. **Access the application**
    - Open http://localhost:3000 in your browser
    - Health check: http://localhost:3000/health
 
@@ -341,11 +350,17 @@ TicTacGame-main/
 
 ### Common Issues
 
-1. **Database connection errors**
+1. **npm ci failures in CI/CD**
+   - **Error**: `npm ci` fails with package-lock.json sync issues
+   - **Solution**: Run `npm run fix-deps` to update package-lock.json
+   - **Prevention**: Run `npm run check-deps` before committing changes
+   - **Note**: The CI/CD pipeline now automatically handles this issue
+
+2. **Database connection errors**
    - Ensure SQLite is properly initialized
    - Check file permissions for database file
 
-2. **Kubernetes deployment issues**
+3. **Kubernetes deployment issues**
    - Verify cluster is running: `kubectl cluster-info`
    - Check pod logs: `kubectl logs -n tictactoe <pod-name>`
    - Verify service: `kubectl get svc -n tictactoe`
