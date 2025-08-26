@@ -208,15 +208,56 @@ jobs:
     
     - name: Configure kubectl
       run: |
+        # Check if KUBE_CONFIG secret is available
+        if [ -z "${{ secrets.KUBE_CONFIG }}" ]; then
+          echo "⚠️ KUBE_CONFIG secret not found. This deployment requires a valid Kubernetes cluster configuration."
+          echo "Please set up the KUBE_CONFIG secret in your repository settings."
+          echo "For local development, you can use: kubectl config view --minify --flatten | base64"
+          exit 1
+        fi
+        
+        # Decode and configure kubectl
         echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig.yaml
         export KUBECONFIG=kubeconfig.yaml
+        
+        # Verify cluster connection
+        echo "Verifying cluster connection..."
+        kubectl cluster-info || {
+          echo "❌ Failed to connect to Kubernetes cluster"
+          echo "Please check your KUBE_CONFIG secret and cluster availability"
+          exit 1
+        }
+        
+        echo "✅ Successfully connected to Kubernetes cluster"
     
     - name: Deploy to Kubernetes
       run: |
         echo "Deploying to production Kubernetes cluster..."
-        kubectl apply -f k8s/namespace.yaml
-        kubectl apply -f k8s/deployment.yaml
-        kubectl rollout status deployment/tictactoe-app -n tictactoe --timeout=300s
+        
+        # Apply namespace
+        echo "Creating namespace..."
+        kubectl apply -f k8s/namespace.yaml || {
+          echo "❌ Failed to create namespace"
+          exit 1
+        }
+        
+        # Apply deployment
+        echo "Applying deployment..."
+        kubectl apply -f k8s/deployment.yaml || {
+          echo "❌ Failed to apply deployment"
+          exit 1
+        }
+        
+        # Wait for rollout
+        echo "Waiting for deployment rollout..."
+        kubectl rollout status deployment/tictactoe-app -n tictactoe --timeout=300s || {
+          echo "❌ Deployment rollout failed"
+          kubectl describe deployment tictactoe-app -n tictactoe
+          kubectl get pods -n tictactoe
+          exit 1
+        }
+        
+        echo "✅ Deployment completed successfully"
     
     - name: Verify deployment
       run: |

@@ -16,7 +16,14 @@
     "docker-build-test": "./scripts/build-docker.sh --test",
     "docker-build-prod": "./scripts/build-docker.sh --dockerfile Dockerfile.production --test",
     "load-test": "./scripts/test-load.sh",
-    "load-test-quick": "DURATION=30s USERS=5 ./scripts/test-load.sh"
+    "load-test-quick": "DURATION=30s USERS=5 ./scripts/test-load.sh",
+    "k8s-deploy": "./scripts/k8s-setup.sh deploy",
+    "k8s-verify": "./scripts/k8s-setup.sh verify",
+    "k8s-health": "./scripts/k8s-setup.sh health",
+    "k8s-logs": "./scripts/k8s-setup.sh logs",
+    "k8s-delete": "./scripts/k8s-setup.sh delete",
+    "k8s-setup": "./scripts/k8s-setup.sh setup",
+    "k8s-kubeconfig": "./scripts/k8s-setup.sh kubeconfig"
   },
   "dependencies": {
     "express": "^4.18.2",

@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: tictactoe-app
-        image: tictactoe-app:latest
+        image: ghcr.io/porchportal/tictactoe-app:latest
         ports:
         - containerPort: 3000
         resources:

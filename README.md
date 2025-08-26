@@ -89,12 +89,31 @@ See [Architecture Diagram](architecture-diagram.md) for detailed system design a
    npm audit --audit-level=moderate
    ```
 
-7. **Start the development server**
+7. **Deploy to Kubernetes**
+   ```bash
+   # Full Kubernetes setup (deploy + verify + health check)
+   npm run k8s-setup
+   
+   # Individual Kubernetes commands
+   npm run k8s-deploy      # Deploy to Kubernetes
+   npm run k8s-verify      # Verify deployment
+   npm run k8s-health      # Run health checks
+   npm run k8s-logs        # Show application logs
+   npm run k8s-delete      # Delete deployment
+   npm run k8s-kubeconfig  # Generate kubeconfig for GitHub Actions
+   
+   # Manual Kubernetes commands
+   kubectl apply -f k8s/namespace.yaml
+   kubectl apply -f k8s/deployment.yaml
+   kubectl get pods -n tictactoe
+   ```
+
+8. **Start the development server**
    ```bash
    npm run dev
    ```
 
-8. **Access the application**
+9. **Access the application**
    - Open http://localhost:3000 in your browser
    - Health check: http://localhost:3000/health
 
@@ -548,6 +567,12 @@ TicTacGame-main/
    - Check file permissions for database file
 
 8. **Kubernetes deployment issues**
+   - **Error**: `connection refused` when trying to connect to cluster
+   - **Solution**: Added proper cluster validation and KUBE_CONFIG secret handling
+   - **Prevention**: Enhanced error handling and cluster connection verification
+   - **Note**: Requires valid KUBE_CONFIG secret for production deployments
+
+9. **General Kubernetes issues**
    - Verify cluster is running: `kubectl cluster-info`
    - Check pod logs: `kubectl logs -n tictactoe <pod-name>`
    - Verify service: `kubectl get svc -n tictactoe`
