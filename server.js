@@ -371,9 +371,12 @@ function gracefulShutdown(signal) {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-server = app.listen(PORT, () => {
-    console.log(`TicTacToe server running on port ${PORT}`);
-    console.log(`Health check: http://localhost:${PORT}/health`);
-});
+// Only start the server if this file is run directly
+if (require.main === module) {
+    server = app.listen(PORT, () => {
+        console.log(`TicTacToe server running on port ${PORT}`);
+        console.log(`Health check: http://localhost:${PORT}/health`);
+    });
+}
 
 module.exports = app;
