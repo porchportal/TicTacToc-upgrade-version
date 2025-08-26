@@ -33,21 +33,11 @@ jobs:
         cache: 'npm'
         registry-url: 'https://registry.npmjs.org'
     
-    - name: Configure npm
-      run: |
-        npm config set fetch-retry-mintimeout 20000
-        npm config set fetch-retry-maxtimeout 120000
-        npm config set fetch-retries 5
-    
     - name: Install dependencies
-      run: |
-        npm ci --prefer-offline --no-audit || npm install --prefer-offline --no-audit
+      run: npm ci
     
     - name: Run tests
       run: npm test
-    
-    - name: Run linting
-      run: npm run lint || true
 
   build:
     needs: test
