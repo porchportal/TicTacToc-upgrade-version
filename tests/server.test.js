@@ -3,7 +3,7 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-// Import the server app
+// Import the server app without starting the server
 const app = require('../server');
 
 describe('TicTacToe API', () => {
@@ -11,6 +11,10 @@ describe('TicTacToe API', () => {
   let gameId;
 
   beforeAll((done) => {
+    // Set test environment
+    process.env.NODE_ENV = 'test';
+    process.env.DB_PATH = ':memory:';
+    
     // Create a test database
     testDb = new sqlite3.Database(':memory:', (err) => {
       if (err) {
@@ -202,11 +206,15 @@ describe('TicTacToe API', () => {
     });
 
     it('should detect a draw game', async () => {
-      // Make moves to create a draw scenario
+      // Make moves to create a draw scenario (no winner)
+      // This creates a board like:
+      // X | O | X
+      // O | X | O
+      // O | X | O
       const moves = [
         { position: 0, player: 'X' }, { position: 1, player: 'O' }, { position: 2, player: 'X' },
-        { position: 3, player: 'O' }, { position: 4, player: 'X' }, { position: 5, player: 'O' },
-        { position: 6, player: 'X' }, { position: 7, player: 'O' }, { position: 8, player: 'X' }
+        { position: 4, player: 'O' }, { position: 3, player: 'X' }, { position: 5, player: 'O' },
+        { position: 7, player: 'X' }, { position: 6, player: 'O' }, { position: 8, player: 'X' }
       ];
 
       for (const move of moves) {
