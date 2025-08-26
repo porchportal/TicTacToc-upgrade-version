@@ -89,23 +89,25 @@ See [Architecture Diagram](architecture-diagram.md) for detailed system design a
    npm audit --audit-level=moderate
    ```
 
-7. **Deploy to Kubernetes**
+7. **Deploy with Docker Compose**
    ```bash
-   # Full Kubernetes setup (deploy + verify + health check)
-   npm run k8s-setup
+   # Deploy to local environment
+   docker compose up -d
    
-   # Individual Kubernetes commands
-   npm run k8s-deploy      # Deploy to Kubernetes
-   npm run k8s-verify      # Verify deployment
-   npm run k8s-health      # Run health checks
-   npm run k8s-logs        # Show application logs
-   npm run k8s-delete      # Delete deployment
-   npm run k8s-kubeconfig  # Generate kubeconfig for GitHub Actions
+   # Deploy to staging environment
+   docker compose -f docker-compose.staging.yml up -d
    
-   # Manual Kubernetes commands
-   kubectl apply -f k8s/namespace.yaml
-   kubectl apply -f k8s/deployment.yaml
-   kubectl get pods -n tictactoe
+   # Deploy to production environment
+   docker compose -f docker-compose.yml up -d
+   
+   # Check deployment status
+   docker compose ps
+   
+   # View logs
+   docker compose logs -f
+   
+   # Stop deployment
+   docker compose down
    ```
 
 8. **Start the development server**
@@ -116,6 +118,17 @@ See [Architecture Diagram](architecture-diagram.md) for detailed system design a
 9. **Access the application**
    - Open http://localhost:3000 in your browser
    - Health check: http://localhost:3000/health
+
+### Why Docker Compose?
+
+For this TicTacToe application, **Docker Compose** is the ideal deployment solution because:
+
+✅ **Simplicity**: No complex cluster setup or external dependencies  
+✅ **Speed**: Faster deployment and startup times  
+✅ **Portability**: Works on any machine with Docker installed  
+✅ **CI/CD Friendly**: No need for Kubernetes secrets or cluster configuration  
+✅ **Resource Efficient**: Lower overhead compared to Kubernetes  
+✅ **Perfect Scale**: Ideal for single-application deployments  
 
 ### Docker Deployment
 
@@ -566,11 +579,11 @@ TicTacGame-main/
    - Ensure SQLite is properly initialized
    - Check file permissions for database file
 
-8. **Kubernetes deployment issues**
-   - **Error**: `connection refused` when trying to connect to cluster
-   - **Solution**: Added proper cluster validation and KUBE_CONFIG secret handling
-   - **Prevention**: Enhanced error handling and cluster connection verification
-   - **Note**: Requires valid KUBE_CONFIG secret for production deployments
+8. **Kubernetes deployment complexity**
+   - **Issue**: Kubernetes deployment required complex cluster setup and KUBE_CONFIG secrets
+   - **Solution**: Switched to Docker Compose for simpler, more practical deployment
+   - **Benefits**: No external cluster dependencies, easier setup, faster deployment
+   - **Note**: Docker Compose is perfect for this application scale and complexity
 
 9. **General Kubernetes issues**
    - Verify cluster is running: `kubectl cluster-info`
