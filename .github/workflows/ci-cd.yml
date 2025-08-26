@@ -31,17 +31,24 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+        registry-url: 'https://registry.npmjs.org'
+    
+    - name: Configure npm
+      run: |
+        npm config set fetch-retry-mintimeout 20000
+        npm config set fetch-retry-maxtimeout 120000
+        npm config set fetch-retries 5
     
     - name: Install dependencies
-      run: npm install
+      run: |
+        npm ci --prefer-offline --no-audit || npm install --prefer-offline --no-audit
     
     - name: Run tests
       run: npm test
     
     - name: Run linting
       run: |
-        npm install -g eslint
-        eslint *.js public/*.js || true
+        npx eslint *.js public/*.js || true
 
   build:
     needs: test
