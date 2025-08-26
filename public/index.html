@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>TicTacToe Full-Stack Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="body1">
+    <div class="md">
+        <p class="mdp">Mode</p>
+        <div class="mode"></div>
+    </div>
+
+    <div class="game-container">
+        <div class="msg-container hide">
+            <p id="msg">Winner</p>
+            <button id="new-btn">New Game</button>
+        </div>
+        
+        <main>
+            <h1>Tic Tac Toe</h1>
+            
+            <div class="game-info">
+                <div class="current-player">
+                    <span>Current Player: </span>
+                    <span id="current-player">X</span>
+                </div>
+                <div class="game-id">
+                    <span>Game ID: </span>
+                    <span id="game-id">-</span>
+                </div>
+            </div>
+
+            <div class="container">
+                <div class="game">
+                    <button class="box clr" data-index="0"></button>
+                    <button class="box clr" data-index="1"></button>
+                    <button class="box clr" data-index="2"></button>
+                    <button class="box clr" data-index="3"></button>
+                    <button class="box clr" data-index="4"></button>
+                    <button class="box clr" data-index="5"></button>
+                    <button class="box clr" data-index="6"></button>
+                    <button class="box clr" data-index="7"></button>
+                    <button class="box clr" data-index="8"></button>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="reset-btn">Reset Game</button>
+                <button id="create-game-btn">Create New Game</button>
+                <button id="stats-btn">View Statistics</button>
+            </div>
+        </main>
+
+        <div class="stats-panel hide" id="stats-panel">
+            <h2>Player Statistics & Game History</h2>
+            <div id="stats-content"></div>
+            <div class="stats-actions">
+                <button id="refresh-stats-btn">Refresh</button>
+                <button id="close-stats-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
