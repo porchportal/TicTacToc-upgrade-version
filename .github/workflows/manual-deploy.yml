@@ -1,0 +1,205 @@
+name: Manual Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - development
+        - staging
+        - production
+      image_tag:
+        description: 'Docker image tag (leave empty for latest)'
+        required: false
+        type: string
+        default: 'latest'
+      force_redeploy:
+        description: 'Force redeploy even if no changes'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  validate:
+    name: Validate Deployment
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Validate environment
+      run: |
+        echo "Deploying to: ${{ github.event.inputs.environment }}"
+        echo "Image tag: ${{ github.event.inputs.image_tag }}"
+        echo "Force redeploy: ${{ github.event.inputs.force_redeploy }}"
+        
+        if [ "${{ github.event.inputs.environment }}" = "production" ]; then
+          echo "⚠️  PRODUCTION DEPLOYMENT - Please ensure this is intentional!"
+        fi
+
+  deploy-development:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event.inputs.environment == 'development'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Deploy with Docker Compose
+      run: |
+        echo "Deploying to development environment..."
+        docker-compose -f docker-compose.dev.yml down
+        docker-compose -f docker-compose.dev.yml pull
+        docker-compose -f docker-compose.dev.yml up -d
+    
+    - name: Wait for deployment
+      run: |
+        sleep 30
+        curl -f http://localhost:3000/health || exit 1
+    
+    - name: Run basic tests
+      run: |
+        echo "Running basic tests..."
+        curl -f http://localhost:3000/health
+        curl -f http://localhost:3000/
+        echo "✅ Development deployment successful!"
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event.inputs.environment == 'staging'
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set image tag
+      id: image-tag
+      run: |
+        if [ -n "${{ github.event.inputs.image_tag }}" ]; then
+          echo "tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+        else
+          echo "tag=latest" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Deploy with Docker Compose
+      run: |
+        echo "Deploying to staging environment..."
+        echo "Using image tag: ${{ steps.image-tag.outputs.tag }}"
+        
+        # Update the image tag in docker-compose
+        sed -i "s/:latest/:${{ steps.image-tag.outputs.tag }}/g" docker-compose.staging.yml
+        
+        docker-compose -f docker-compose.staging.yml down
+        docker-compose -f docker-compose.staging.yml pull
+        docker-compose -f docker-compose.staging.yml up -d
+    
+    - name: Wait for deployment
+      run: |
+        sleep 30
+        curl -f http://localhost:3000/health || exit 1
+    
+    - name: Run smoke tests
+      run: |
+        echo "Running smoke tests..."
+        curl -f http://localhost:3000/health
+        curl -f http://localhost:3000/
+        echo "✅ Staging deployment successful!"
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event.inputs.environment == 'production'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+    
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig.yaml
+        export KUBECONFIG=kubeconfig.yaml
+    
+    - name: Set image tag
+      id: image-tag
+      run: |
+        if [ -n "${{ github.event.inputs.image_tag }}" ]; then
+          echo "tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+        else
+          echo "tag=latest" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Update deployment image
+      run: |
+        echo "Updating production deployment..."
+        echo "Using image tag: ${{ steps.image-tag.outputs.tag }}"
+        
+        # Update the deployment with new image
+        kubectl set image deployment/tictactoe-app tictactoe-app=ghcr.io/${{ env.IMAGE_NAME }}:${{ steps.image-tag.outputs.tag }} -n tictactoe
+    
+    - name: Wait for rollout
+      run: |
+        kubectl rollout status deployment/tictactoe-app -n tictactoe --timeout=300s
+    
+    - name: Verify deployment
+      run: |
+        kubectl get pods -n tictactoe
+        kubectl get services -n tictactoe
+    
+    - name: Run health checks
+      run: |
+        echo "Running health checks..."
+        kubectl wait --for=condition=ready pod -l app=tictactoe-app -n tictactoe --timeout=300s
+        SERVICE_URL=$(kubectl get service tictactoe-service -n tictactoe -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        curl -f http://$SERVICE_URL/health || exit 1
+        echo "✅ Production deployment successful!"
+
+  notify:
+    name: Send Notification
+    runs-on: ubuntu-latest
+    needs: [deploy-development, deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+    - name: Notify success
+      if: success()
+      run: |
+        echo "✅ Manual deployment to ${{ github.event.inputs.environment }} completed successfully!"
+        echo "Deployed by: ${{ github.actor }}"
+        echo "Image tag: ${{ github.event.inputs.image_tag || 'latest' }}"
+    
+    - name: Notify failure
+      if: failure()
+      run: |
+        echo "❌ Manual deployment to ${{ github.event.inputs.environment }} failed!"
+        echo "Deployed by: ${{ github.actor }}"
+        echo "Please check the logs for details."
+    
+    - name: Create deployment summary
+      run: |
+        echo "## Manual Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Deployed by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Image tag**: ${{ github.event.inputs.image_tag || 'latest' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Force redeploy**: ${{ github.event.inputs.force_redeploy }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY

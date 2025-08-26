@@ -1,0 +1,312 @@
+name: Deploy TicTacToe Application
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+        - development
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  DOCKER_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+jobs:
+  # Test and Quality Assurance
+  test:
+    name: Test and Quality Check
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run linting
+      run: |
+        npm install -g eslint
+        eslint *.js public/*.js || echo "Linting completed"
+    
+    - name: Run tests
+      run: npm test
+    
+    - name: Run security audit
+      run: npm audit --audit-level=moderate || true
+    
+    - name: Upload test coverage
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: coverage-${{ matrix.node-version }}
+        path: coverage/
+        retention-days: 30
+
+  # Security scanning
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # Build Docker image
+  build:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.DOCKER_IMAGE }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
+    
+    - name: Set image tag output
+      run: echo "image-tag=${{ steps.meta.outputs.version }}" >> $GITHUB_OUTPUT
+
+  # Deploy to Staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Deploy with Docker Compose
+      run: |
+        echo "Deploying to staging environment..."
+        docker-compose -f docker-compose.staging.yml pull
+        docker-compose -f docker-compose.staging.yml up -d
+    
+    - name: Wait for deployment
+      run: |
+        sleep 30
+        curl -f http://localhost:3000/health || exit 1
+    
+    - name: Run smoke tests
+      run: |
+        echo "Running smoke tests..."
+        curl -f http://localhost:3000/health
+        curl -f http://localhost:3000/
+        echo "Smoke tests passed!"
+
+  # Deploy to Production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+    
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig.yaml
+        export KUBECONFIG=kubeconfig.yaml
+    
+    - name: Deploy to Kubernetes
+      run: |
+        echo "Deploying to production Kubernetes cluster..."
+        kubectl apply -f k8s/namespace.yaml
+        kubectl apply -f k8s/deployment.yaml
+        kubectl rollout status deployment/tictactoe-app -n tictactoe --timeout=300s
+    
+    - name: Verify deployment
+      run: |
+        kubectl get pods -n tictactoe
+        kubectl get services -n tictactoe
+        kubectl get hpa -n tictactoe
+    
+    - name: Run health checks
+      run: |
+        echo "Running health checks..."
+        kubectl wait --for=condition=ready pod -l app=tictactoe-app -n tictactoe --timeout=300s
+        SERVICE_URL=$(kubectl get service tictactoe-service -n tictactoe -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        curl -f http://$SERVICE_URL/health || exit 1
+
+  # Load Testing
+  load-test:
+    name: Load Testing
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always() && (needs.deploy-staging.result == 'success' || needs.deploy-production.result == 'success')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+    
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig.yaml
+        export KUBECONFIG=kubeconfig.yaml
+    
+    - name: Get service URL
+      id: service-url
+      run: |
+        SERVICE_URL=$(kubectl get service tictactoe-service -n tictactoe -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
+        echo "Testing URL: $SERVICE_URL"
+    
+    - name: Run k6 load test
+      uses: grafana/k6-action@v0.3.0
+      with:
+        filename: load-test.js
+        flags: --out json=results.json --out influxdb=http://localhost:8086/k6
+      env:
+        TARGET_URL: ${{ steps.service-url.outputs.url }}
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: k6-results-${{ github.run_number }}
+        path: results.json
+        retention-days: 90
+
+  # Performance monitoring
+  performance:
+    name: Performance Monitoring
+    runs-on: ubuntu-latest
+    needs: load-test
+    if: always() && needs.load-test.result == 'success'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download test results
+      uses: actions/download-artifact@v4
+      with:
+        name: k6-results-${{ github.run_number }}
+    
+    - name: Analyze performance
+      run: |
+        echo "Analyzing performance results..."
+        if [ -f results.json ]; then
+          echo "Test results found"
+          # Add performance analysis logic here
+        else
+          echo "No test results found"
+        fi
+
+  # Notifications
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production, load-test]
+    if: always()
+    
+    steps:
+    - name: Notify on success
+      if: needs.deploy-production.result == 'success'
+      run: |
+        echo "✅ Production deployment successful!"
+        # Add notification logic (Slack, email, etc.)
+    
+    - name: Notify on failure
+      if: needs.deploy-production.result == 'failure'
+      run: |
+        echo "❌ Production deployment failed!"
+        # Add notification logic (Slack, email, etc.)
+    
+    - name: Create deployment summary
+      run: |
+        echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Build**: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Staging**: ${{ needs.deploy-staging.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Production**: ${{ needs.deploy-production.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Load Test**: ${{ needs.load-test.result }}" >> $GITHUB_STEP_SUMMARY

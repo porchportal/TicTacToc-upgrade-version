@@ -1,0 +1,156 @@
+name: Emergency Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment to rollback'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - staging
+        - production
+      previous_tag:
+        description: 'Previous image tag to rollback to'
+        required: true
+        type: string
+        default: 'latest'
+      reason:
+        description: 'Reason for rollback'
+        required: true
+        type: string
+        default: 'Emergency rollback'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  validate-rollback:
+    name: Validate Rollback
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Validate rollback request
+      run: |
+        echo "⚠️  EMERGENCY ROLLBACK REQUESTED ⚠️"
+        echo "Environment: ${{ github.event.inputs.environment }}"
+        echo "Rollback to tag: ${{ github.event.inputs.previous_tag }}"
+        echo "Reason: ${{ github.event.inputs.reason }}"
+        echo "Requested by: ${{ github.actor }}"
+        
+        if [ "${{ github.event.inputs.environment }}" = "production" ]; then
+          echo "🚨 PRODUCTION ROLLBACK - This will affect live users!"
+        fi
+
+  rollback-staging:
+    name: Rollback Staging
+    runs-on: ubuntu-latest
+    needs: validate-rollback
+    if: github.event.inputs.environment == 'staging'
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Rollback with Docker Compose
+      run: |
+        echo "Rolling back staging to tag: ${{ github.event.inputs.previous_tag }}"
+        
+        # Update the image tag in docker-compose
+        sed -i "s/:latest/:${{ github.event.inputs.previous_tag }}/g" docker-compose.staging.yml
+        
+        docker-compose -f docker-compose.staging.yml down
+        docker-compose -f docker-compose.staging.yml pull
+        docker-compose -f docker-compose.staging.yml up -d
+    
+    - name: Wait for rollback
+      run: |
+        sleep 30
+        curl -f http://localhost:3000/health || exit 1
+    
+    - name: Verify rollback
+      run: |
+        echo "Verifying rollback..."
+        curl -f http://localhost:3000/health
+        curl -f http://localhost:3000/
+        echo "✅ Staging rollback successful!"
+
+  rollback-production:
+    name: Rollback Production
+    runs-on: ubuntu-latest
+    needs: validate-rollback
+    if: github.event.inputs.environment == 'production'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+    
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig.yaml
+        export KUBECONFIG=kubeconfig.yaml
+    
+    - name: Rollback deployment
+      run: |
+        echo "Rolling back production to tag: ${{ github.event.inputs.previous_tag }}"
+        
+        # Update the deployment with previous image
+        kubectl set image deployment/tictactoe-app tictactoe-app=ghcr.io/${{ env.IMAGE_NAME }}:${{ github.event.inputs.previous_tag }} -n tictactoe
+    
+    - name: Wait for rollback
+      run: |
+        kubectl rollout status deployment/tictactoe-app -n tictactoe --timeout=300s
+    
+    - name: Verify rollback
+      run: |
+        kubectl get pods -n tictactoe
+        kubectl get services -n tictactoe
+        
+        echo "Running health checks..."
+        kubectl wait --for=condition=ready pod -l app=tictactoe-app -n tictactoe --timeout=300s
+        SERVICE_URL=$(kubectl get service tictactoe-service -n tictactoe -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        curl -f http://$SERVICE_URL/health || exit 1
+        echo "✅ Production rollback successful!"
+
+  notify-rollback:
+    name: Notify Rollback
+    runs-on: ubuntu-latest
+    needs: [rollback-staging, rollback-production]
+    if: always()
+    
+    steps:
+    - name: Notify rollback success
+      if: success()
+      run: |
+        echo "✅ Rollback to ${{ github.event.inputs.environment }} completed successfully!"
+        echo "Rolled back to tag: ${{ github.event.inputs.previous_tag }}"
+        echo "Reason: ${{ github.event.inputs.reason }}"
+        echo "Executed by: ${{ github.actor }}"
+    
+    - name: Notify rollback failure
+      if: failure()
+      run: |
+        echo "❌ Rollback to ${{ github.event.inputs.environment }} failed!"
+        echo "Attempted to rollback to tag: ${{ github.event.inputs.previous_tag }}"
+        echo "Reason: ${{ github.event.inputs.reason }}"
+        echo "Executed by: ${{ github.actor }}"
+        echo "Please check the logs and take manual action if needed."
+    
+    - name: Create rollback summary
+      run: |
+        echo "## Emergency Rollback Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Rollback to**: ${{ github.event.inputs.previous_tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Reason**: ${{ github.event.inputs.reason }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Executed by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Timestamp**: $(date -u)" >> $GITHUB_STEP_SUMMARY
