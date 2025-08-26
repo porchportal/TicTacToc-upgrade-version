@@ -77,12 +77,24 @@ See [Architecture Diagram](architecture-diagram.md) for detailed system design a
    ./scripts/test-load.sh --url http://localhost:3000 --duration 2m --users 20
    ```
 
-6. **Start the development server**
+6. **Run security scans**
+   ```bash
+   # Run npm security audit
+   npm audit
+   
+   # Run Trivy vulnerability scanner (if installed)
+   trivy fs .
+   
+   # Security audit with specific level
+   npm audit --audit-level=moderate
+   ```
+
+7. **Start the development server**
    ```bash
    npm run dev
    ```
 
-7. **Access the application**
+8. **Access the application**
    - Open http://localhost:3000 in your browser
    - Health check: http://localhost:3000/health
 
@@ -525,11 +537,17 @@ TicTacGame-main/
    - **Prevention**: Load tests now run in the same environment as the application
    - **Note**: CI/CD workflows now properly handle service availability
 
-6. **Database connection errors**
+6. **Security scanning permission errors**
+   - **Error**: `Resource not accessible by integration` when uploading SARIF files
+   - **Solution**: Added `security-events: write` permission to workflows
+   - **Prevention**: Both CI/CD workflows now have proper security scanning permissions
+   - **Note**: Trivy vulnerability scanning and SARIF upload now work correctly
+
+7. **Database connection errors**
    - Ensure SQLite is properly initialized
    - Check file permissions for database file
 
-7. **Kubernetes deployment issues**
+8. **Kubernetes deployment issues**
    - Verify cluster is running: `kubectl cluster-info`
    - Check pod logs: `kubectl logs -n tictactoe <pod-name>`
    - Verify service: `kubectl get svc -n tictactoe`

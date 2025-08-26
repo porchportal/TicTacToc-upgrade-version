@@ -18,10 +18,11 @@ on:
         - production
         - development
 
-# Set permissions for GitHub Container Registry
+# Set permissions for GitHub Container Registry and Security Scanning
 permissions:
   contents: read
   packages: write
+  security-events: write
 
 env:
   REGISTRY: ghcr.io
