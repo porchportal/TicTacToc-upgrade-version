@@ -1,0 +1,32 @@
+{
+  "cluster": "tictactoe-cluster",
+  "serviceName": "tictactoe-service",
+  "taskDefinition": "tictactoe-app",
+  "loadBalancers": [
+    {
+      "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:YOUR_ACCOUNT_ID:targetgroup/tictactoe-tg/YOUR_TARGET_GROUP_ID",
+      "containerName": "tictactoe-app",
+      "containerPort": 3000
+    }
+  ],
+  "desiredCount": 2,
+  "launchType": "FARGATE",
+  "platformVersion": "LATEST",
+  "networkConfiguration": {
+    "awsvpcConfiguration": {
+      "subnets": [
+        "subnet-YOUR_SUBNET_ID_1",
+        "subnet-YOUR_SUBNET_ID_2"
+      ],
+      "securityGroups": [
+        "sg-YOUR_SECURITY_GROUP_ID"
+      ],
+      "assignPublicIp": "ENABLED"
+    }
+  },
+  "deploymentConfiguration": {
+    "maximumPercent": 200,
+    "minimumHealthyPercent": 50
+  },
+  "healthCheckGracePeriodSeconds": 60
+}

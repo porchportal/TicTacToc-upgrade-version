@@ -108,6 +108,124 @@ docker-compose -f docker-compose.dev.yml down --timeout 0
 3. **Access the application**
    - Open http://localhost:3000 in your browser
 
+### AWS Deployment
+
+#### Prerequisites
+- AWS CLI configured with appropriate permissions
+- Docker installed and running
+- Terraform (optional, for infrastructure as code)
+
+#### Option 1: Manual AWS ECS Deployment
+
+1. **Create ECR Repository**
+   ```bash
+   aws ecr create-repository --repository-name tictactoe-app --region us-east-1
+   ```
+
+2. **Build and Push Docker Image**
+   ```bash
+   # Get ECR login token
+   aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+   
+   # Build and tag image
+   docker build -t tictactoe-app .
+   docker tag tictactoe-app:latest YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/tictactoe-app:latest
+   
+   # Push to ECR
+   docker push YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/tictactoe-app:latest
+   ```
+
+3. **Deploy using AWS Script**
+   ```bash
+   # Set your AWS account ID
+   export AWS_ACCOUNT_ID=YOUR_ACCOUNT_ID
+   export AWS_REGION=us-east-1
+   
+   # Deploy to ECS
+   ./aws/deploy.sh deploy
+   ```
+
+#### Option 2: Infrastructure as Code with Terraform
+
+1. **Initialize Terraform**
+   ```bash
+   cd aws/terraform
+   terraform init
+   ```
+
+2. **Plan and Apply**
+   ```bash
+   terraform plan
+   terraform apply
+   ```
+
+3. **Deploy Application**
+   ```bash
+   # Build and push image
+   docker build -t tictactoe-app .
+   docker tag tictactoe-app:latest $(terraform output -raw ecr_repository_url):latest
+   docker push $(terraform output -raw ecr_repository_url):latest
+   ```
+
+#### AWS Architecture
+- **ECS Fargate**: Serverless container orchestration
+- **Application Load Balancer**: Traffic distribution and SSL termination
+- **ECR**: Container image registry
+- **CloudWatch**: Logging and monitoring
+- **VPC**: Network isolation and security
+- **Auto Scaling**: Automatic scaling based on CPU, memory, and request count
+
+#### Access the Application
+After deployment, access your application at:
+```
+http://YOUR_ALB_DNS_NAME
+```
+
+#### Auto Scaling Configuration
+
+The application includes comprehensive auto-scaling capabilities:
+
+**Target Tracking Scaling:**
+- **CPU-based**: Scales when CPU utilization exceeds 70%
+- **Memory-based**: Scales when memory utilization exceeds 70%
+- **Request Count**: Scales based on request count per target
+
+**Scheduled Scaling:**
+- **Scale Up**: 8 AM daily (2-8 instances)
+- **Scale Down**: 10 PM daily (1-3 instances)
+
+**Capacity Limits:**
+- **Minimum**: 1 instance
+- **Maximum**: 10 instances
+- **Default**: 2 instances
+
+**Management Commands:**
+```bash
+# Show auto-scaling status
+./aws/manage-auto-scaling.sh status
+
+# Update capacity limits
+./aws/manage-auto-scaling.sh update-capacity 2 8
+
+# Update CPU target
+./aws/manage-auto-scaling.sh update-cpu-target 60
+
+# Enable scheduled scaling
+./aws/manage-auto-scaling.sh enable-scheduled
+
+# Show CloudWatch alarms
+./aws/manage-auto-scaling.sh alarms
+```
+
+**Auto Scaling Features:**
+- ✅ **CPU-based scaling** (70% target)
+- ✅ **Memory-based scaling** (70% target)
+- ✅ **Request count scaling** (1000 requests/target)
+- ✅ **Scheduled scaling** (configurable)
+- ✅ **CloudWatch alarms** (CPU, memory, response time)
+- ✅ **Cooldown periods** (5 minutes)
+- ✅ **Stabilization windows** (prevent thrashing)
+
 ### CI/CD Pipeline
 
 The project includes comprehensive CI/CD workflows:

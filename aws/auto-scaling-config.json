@@ -1,0 +1,91 @@
+{
+  "autoScalingConfig": {
+    "targetTracking": {
+      "cpu": {
+        "targetValue": 70,
+        "scaleInCooldown": 300,
+        "scaleOutCooldown": 300,
+        "enabled": true
+      },
+      "memory": {
+        "targetValue": 70,
+        "scaleInCooldown": 300,
+        "scaleOutCooldown": 300,
+        "enabled": true
+      },
+      "requestCount": {
+        "targetValue": 1000,
+        "scaleInCooldown": 300,
+        "scaleOutCooldown": 300,
+        "enabled": true
+      }
+    },
+    "scheduled": {
+      "enabled": false,
+      "scaleUp": {
+        "schedule": "cron(0 8 * * ? *)",
+        "minCapacity": 2,
+        "maxCapacity": 8,
+        "description": "Scale up at 8 AM daily"
+      },
+      "scaleDown": {
+        "schedule": "cron(0 22 * * ? *)",
+        "minCapacity": 1,
+        "maxCapacity": 3,
+        "description": "Scale down at 10 PM daily"
+      }
+    },
+    "capacity": {
+      "minCapacity": 1,
+      "maxCapacity": 10,
+      "desiredCapacity": 2
+    },
+    "alarms": {
+      "cpu": {
+        "threshold": 80,
+        "evaluationPeriods": 2,
+        "period": 300,
+        "enabled": true
+      },
+      "memory": {
+        "threshold": 80,
+        "evaluationPeriods": 2,
+        "period": 300,
+        "enabled": true
+      },
+      "responseTime": {
+        "threshold": 2000,
+        "evaluationPeriods": 2,
+        "period": 300,
+        "enabled": true
+      }
+    },
+    "behavior": {
+      "scaleUp": {
+        "stabilizationWindowSeconds": 60,
+        "policies": [
+          {
+            "type": "Percent",
+            "value": 50,
+            "periodSeconds": 60
+          },
+          {
+            "type": "Pods",
+            "value": 2,
+            "periodSeconds": 60
+          }
+        ]
+      },
+      "scaleDown": {
+        "stabilizationWindowSeconds": 300,
+        "policies": [
+          {
+            "type": "Percent",
+            "value": 10,
+            "periodSeconds": 60
+          }
+        ]
+      }
+    }
+  }
+}
