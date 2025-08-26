@@ -100,8 +100,26 @@ jobs:
     - name: Run smoke tests
       run: |
         echo "Running smoke tests..."
+        
+        # Wait for application to be ready
+        echo "Waiting for application to be ready..."
+        for i in {1..30}; do
+          if curl -s http://localhost:3000/health >/dev/null 2>&1; then
+            echo "Application is ready!"
+            break
+          fi
+          echo "Attempt $i/30: Application not ready yet..."
+          sleep 2
+        done
+        
+        # Test health endpoint
+        echo "Testing health endpoint..."
         curl -f http://localhost:3000/health
-        curl -f http://localhost:3000/
+        
+        # Test main application
+        echo "Testing main application..."
+        curl -f http://localhost:3000/ -o /dev/null -w "HTTP Status: %{http_code}\n"
+        
         echo "✅ Smoke tests passed!"
 
   load-test:

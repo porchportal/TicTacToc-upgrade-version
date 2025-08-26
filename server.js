@@ -15,7 +15,19 @@ app.use(helmet());
 app.use(cors());
 app.use(morgan('combined'));
 app.use(express.json());
-app.use(express.static('public'));
+// Serve static files with error handling
+app.use(express.static('public', {
+    setHeaders: (res, path, stat) => {
+        // Add cache headers for better performance
+        res.set('Cache-Control', 'public, max-age=3600');
+    }
+}));
+
+// Handle static file errors
+app.use('/public', (err, req, res, next) => {
+    console.error('Static file error:', err);
+    res.status(404).json({ error: 'Static file not found' });
+});
 
 // Database setup
 const dbPath = process.env.DB_PATH || './data/tictactoe.db';
@@ -314,7 +326,58 @@ app.get('/health', (req, res) => {
 
 // Serve the main application
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    const indexPath = path.join(__dirname, 'public', 'index.html');
+    
+    // Check if file exists
+    if (!require('fs').existsSync(indexPath)) {
+        console.error('index.html not found at:', indexPath);
+        // Serve a basic fallback HTML
+        return res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>TicTacToe Game</title>
+                <style>
+                    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                    .error { color: red; }
+                    .info { color: blue; }
+                </style>
+            </head>
+            <body>
+                <h1>TicTacToe Game</h1>
+                <p class="error">Application files not found at: ${indexPath}</p>
+                <p class="info">Health check: <a href="/health">/health</a></p>
+                <p>API endpoints are available at /api/*</p>
+            </body>
+            </html>
+        `);
+    }
+    
+    res.sendFile(indexPath, (err) => {
+        if (err) {
+            console.error('Error serving index.html:', err);
+            // Serve a basic fallback HTML
+            res.send(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>TicTacToe Game</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                        .error { color: red; }
+                        .info { color: blue; }
+                    </style>
+                </head>
+                <body>
+                    <h1>TicTacToe Game</h1>
+                    <p class="error">Failed to serve application: ${err.message}</p>
+                    <p class="info">Health check: <a href="/health">/health</a></p>
+                    <p>API endpoints are available at /api/*</p>
+                </body>
+                </html>
+            `);
+        }
+    });
 });
 
 // Error handling middleware

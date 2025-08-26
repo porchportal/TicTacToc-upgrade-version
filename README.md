@@ -501,11 +501,17 @@ TicTacGame-main/
    - **Prevention**: Updated Dockerfile with npm configuration and retry logic
    - **Note**: Docker builds now automatically retry failed npm installations
 
-4. **Database connection errors**
+4. **Docker container 500 errors on root endpoint**
+   - **Error**: `ENOENT: no such file or directory, stat '/app/public/index.html'`
+   - **Solution**: Fixed `.dockerignore` to include the `public` directory
+   - **Prevention**: Updated `.dockerignore` to exclude only unnecessary files
+   - **Note**: The `public` directory is now properly included in Docker builds
+
+5. **Database connection errors**
    - Ensure SQLite is properly initialized
    - Check file permissions for database file
 
-5. **Kubernetes deployment issues**
+6. **Kubernetes deployment issues**
    - Verify cluster is running: `kubectl cluster-info`
    - Check pod logs: `kubectl logs -n tictactoe <pod-name>`
    - Verify service: `kubectl get svc -n tictactoe`
