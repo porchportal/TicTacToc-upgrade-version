@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Mode Button Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #00897B;
+            color: white;
+            transition: background-color 0.5s;
+        }
+        
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .md {
+            display: flex;
+            position: relative;
+            height: 22px;
+            width: 70px;
+            border: 1px solid black;
+            border-radius: 50px;
+            background-color: #242e2f;
+            cursor: pointer;
+            margin: 20px 0;
+        }
+        
+        .mdp {
+            margin-left: 24px;
+            font-size: 18px;
+            font-weight: bold;
+            font-family: serif;
+            color: #ffffff;
+            transition: margin-left 0.5s;
+            cursor: pointer;
+        }
+        
+        .mode {
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            background-color: #00897B;
+            border: 1px solid black;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.5s ease;
+        }
+        
+        .modem {
+            transform: translateX(50px);
+        }
+        
+        .modem2 {
+            transform: translateX(0);
+        }
+        
+        .test-box {
+            width: 100px;
+            height: 100px;
+            background-color: #ffffc7;
+            margin: 10px;
+            border-radius: 10px;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        
+        .bosh {
+            box-shadow: 3px 5px 10px #ffffc7a6;
+        }
+        
+        .status {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Mode Button Test</h1>
+        
+        <div class="status">
+            <h3>Current Status:</h3>
+            <p>Mode: <span id="mode-status">Light</span></p>
+            <p>Background: <span id="bg-status">Light Blue</span></p>
+        </div>
+        
+        <h3>Mode Toggle:</h3>
+        <div class="md" id="test-md">
+            <p class="mdp" id="test-mdp">Dark</p>
+            <div class="mode" id="test-mode"></div>
+        </div>
+        
+        <h3>Test Boxes (should change appearance in dark mode):</h3>
+        <div id="test-boxes">
+            <div class="test-box"></div>
+            <div class="test-box"></div>
+            <div class="test-box"></div>
+        </div>
+        
+        <div class="status">
+            <h3>Instructions:</h3>
+            <p>1. Click the mode toggle button above</p>
+            <p>2. Watch the background color change</p>
+            <p>3. Watch the toggle circle move</p>
+            <p>4. Watch the test boxes change appearance</p>
+        </div>
+    </div>
+
+    <script>
+        let bcmode = true;
+        const body = document.body;
+        const mode = document.getElementById('test-mode');
+        const mdp = document.getElementById('test-mdp');
+        const md = document.getElementById('test-md');
+        const testBoxes = document.querySelectorAll('.test-box');
+        const modeStatus = document.getElementById('mode-status');
+        const bgStatus = document.getElementById('bg-status');
+        
+        function toggleMode() {
+            console.log('Mode toggle clicked, current mode:', bcmode ? 'light' : 'dark');
+            
+            if (bcmode) {
+                // Switch to dark mode
+                body.style.backgroundColor = "#242e2f";
+                mode.classList.add("modem");
+                mode.classList.remove("modem2");
+                testBoxes.forEach(box => box.classList.add("bosh"));
+                mdp.innerText = "Light";
+                mdp.style.marginLeft = "6px";
+                bcmode = false;
+                modeStatus.textContent = "Dark";
+                bgStatus.textContent = "Dark Gray";
+                console.log('Switched to dark mode');
+            } else {
+                // Switch to light mode
+                body.style.backgroundColor = "#00897B";
+                mode.classList.remove("modem");
+                mode.classList.add("modem2");
+                testBoxes.forEach(box => box.classList.remove("bosh"));
+                mdp.innerText = "Dark";
+                mdp.style.marginLeft = "24px";
+                bcmode = true;
+                modeStatus.textContent = "Light";
+                bgStatus.textContent = "Light Blue";
+                console.log('Switched to light mode');
+            }
+        }
+        
+        // Add event listeners
+        md.addEventListener('click', toggleMode);
+        mdp.addEventListener('click', toggleMode);
+        
+        console.log('Mode button test page loaded');
+        console.log('Click the mode toggle to test functionality');
+    </script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>3x3 Grid Visualization Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #00897B;
+            color: white;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .game-item {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #74c0fc;
+        }
+        
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 10px;
+        }
+        
+        .game-id {
+            font-family: monospace;
+            font-size: 12px;
+            color: #adb5bd;
+        }
+        
+        .game-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .game-status.winner {
+            background: #51cf66;
+            color: #000;
+        }
+        
+        .game-status.draw {
+            background: #ffd43b;
+            color: #000;
+        }
+        
+        .move-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.1);
+            padding: 3px;
+            border-radius: 5px;
+            flex-shrink: 0;
+        }
+        
+        .move-cell {
+            width: 100%;
+            height: 100%;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            font-family: monospace;
+            background: rgba(255,255,255,0.05);
+            transition: all 0.2s ease;
+        }
+        
+        .move-cell.x {
+            background-color: #ff6b6b;
+            color: white;
+            border-color: #ff5252;
+        }
+        
+        .move-cell.o {
+            background-color: #74c0fc;
+            color: white;
+            border-color: #4dabf7;
+        }
+        
+        .move-cell.empty {
+            background-color: transparent;
+            color: transparent;
+            border-color: rgba(255,255,255,0.1);
+        }
+        
+        .game-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #adb5bd;
+            margin-bottom: 8px;
+        }
+        
+        .test-info {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>3x3 Grid Visualization Test</h1>
+        
+        <div class="test-info">
+            <h3>Test Cases:</h3>
+            <p>1. <strong>X Wins (Top Row)</strong>: X(0) → O(4) → X(1) → O(5) → X(2)</p>
+            <p>2. <strong>Draw (Full Board)</strong>: All 9 positions filled</p>
+            <p>3. <strong>O Wins (Middle Column)</strong>: X(0) → O(3) → X(1) → O(4) → X(2) → O(5)</p>
+            <p>4. <strong>X Wins (Diagonal)</strong>: X(0) → O(1) → X(4) → O(2) → X(8)</p>
+        </div>
+        
+        <div id="test-games"></div>
+    </div>
+
+    <script>
+        const testGames = [
+            {
+                id: 'game-12345678',
+                winner: 'X',
+                isDraw: false,
+                createdAt: '2025-08-26T10:30:00Z',
+                moveHistory: [
+                    { player: 'X', position: 0 },
+                    { player: 'O', position: 4 },
+                    { player: 'X', position: 1 },
+                    { player: 'O', position: 5 },
+                    { player: 'X', position: 2 }
+                ]
+            },
+            {
+                id: 'game-87654321',
+                winner: null,
+                isDraw: true,
+                createdAt: '2025-08-26T10:25:00Z',
+                moveHistory: [
+                    { player: 'X', position: 0 },
+                    { player: 'O', position: 1 },
+                    { player: 'X', position: 2 },
+                    { player: 'O', position: 3 },
+                    { player: 'X', position: 4 },
+                    { player: 'O', position: 5 },
+                    { player: 'X', position: 6 },
+                    { player: 'O', position: 7 },
+                    { player: 'X', position: 8 }
+                ]
+            },
+            {
+                id: 'game-11111111',
+                winner: 'O',
+                isDraw: false,
+                createdAt: '2025-08-26T10:20:00Z',
+                moveHistory: [
+                    { player: 'X', position: 0 },
+                    { player: 'O', position: 3 },
+                    { player: 'X', position: 1 },
+                    { player: 'O', position: 4 },
+                    { player: 'X', position: 2 },
+                    { player: 'O', position: 5 }
+                ]
+            },
+            {
+                id: 'game-22222222',
+                winner: 'X',
+                isDraw: false,
+                createdAt: '2025-08-26T10:15:00Z',
+                moveHistory: [
+                    { player: 'X', position: 0 },
+                    { player: 'O', position: 1 },
+                    { player: 'X', position: 4 },
+                    { player: 'O', position: 2 },
+                    { player: 'X', position: 8 }
+                ]
+            }
+        ];
+        
+        function renderGames() {
+            const container = document.getElementById('test-games');
+            let html = '';
+            
+            testGames.forEach(game => {
+                const gameDate = new Date(game.createdAt).toLocaleString();
+                const status = game.winner ? `Winner: ${game.winner}` : 'Draw';
+                const moves = game.moveHistory.length;
+                
+                // Create 3x3 grid visualization
+                const board = Array(9).fill('');
+                game.moveHistory.forEach(move => {
+                    board[move.position] = move.player;
+                });
+                
+                const gridHTML = `
+                    <div class="move-grid">
+                        ${board.map((cell, index) => 
+                            `<div class="move-cell ${cell ? cell.toLowerCase() : 'empty'}">${cell || ''}</div>`
+                        ).join('')}
+                    </div>
+                `;
+                
+                html += `
+                    <div class="game-item">
+                        <div class="game-header">
+                            <span class="game-id">Game ID: ${game.id.substring(0, 8)}...</span>
+                            ${gridHTML}
+                            <span class="game-status ${game.winner ? 'winner' : 'draw'}">${status}</span>
+                        </div>
+                        <div class="game-details">
+                            <span class="game-date">${gameDate}</span>
+                            <span class="game-moves">Moves: ${moves}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // Initialize the test
+        renderGames();
+        
+        console.log('Grid visualization test loaded');
+        console.log('Check the 3x3 grids to see the move visualization');
+    </script>
+</body>
+</html>

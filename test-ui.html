@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>UI Test - TicTacToe</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #00897B;
+            color: white;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background-color: #191913;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #333;
+        }
+        .mode-test {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .mode-button {
+            width: 70px;
+            height: 22px;
+            border: 1px solid black;
+            border-radius: 50px;
+            position: relative;
+            cursor: pointer;
+        }
+        .mode-circle {
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            background-color: #00897B;
+            border: 1px solid black;
+            border-radius: 50%;
+            top: 0;
+            left: 0;
+            transition: transform 0.5s;
+        }
+        .mode-text {
+            margin-left: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>UI Test - TicTacToe Buttons</h1>
+    
+    <div class="test-section">
+        <h3>Mode Button Test</h3>
+        <div class="mode-test">
+            <div class="mode-button" id="test-mode">
+                <div class="mode-circle" id="test-mode-circle"></div>
+            </div>
+            <span class="mode-text" id="test-mode-text">Dark</span>
+        </div>
+        <p>Status: <span id="mode-status">Light mode</span></p>
+    </div>
+    
+    <div class="test-section">
+        <h3>New Game Button Test</h3>
+        <button id="test-new-game">New Game</button>
+        <p>Status: <span id="new-game-status">Not clicked</span></p>
+    </div>
+    
+    <div class="test-section">
+        <h3>Game State Test</h3>
+        <button id="test-win">Simulate Win</button>
+        <button id="test-draw">Simulate Draw</button>
+        <button id="test-reset">Reset Game</button>
+        <p>Game State: <span id="game-state">Playing</span></p>
+    </div>
+
+    <script>
+        // Mode button test
+        let isDarkMode = false;
+        const modeButton = document.getElementById('test-mode');
+        const modeCircle = document.getElementById('test-mode-circle');
+        const modeText = document.getElementById('test-mode-text');
+        const modeStatus = document.getElementById('mode-status');
+        
+        function toggleMode() {
+            isDarkMode = !isDarkMode;
+            if (isDarkMode) {
+                modeCircle.style.transform = 'translateX(50px)';
+                modeText.textContent = 'Light';
+                modeStatus.textContent = 'Dark mode';
+                document.body.style.backgroundColor = '#242e2f';
+            } else {
+                modeCircle.style.transform = 'translateX(0)';
+                modeText.textContent = 'Dark';
+                modeStatus.textContent = 'Light mode';
+                document.body.style.backgroundColor = '#00897B';
+            }
+        }
+        
+        modeButton.addEventListener('click', toggleMode);
+        modeText.addEventListener('click', toggleMode);
+        
+        // New Game button test
+        const newGameBtn = document.getElementById('test-new-game');
+        const newGameStatus = document.getElementById('new-game-status');
+        
+        newGameBtn.addEventListener('click', () => {
+            newGameStatus.textContent = 'New game created!';
+            setTimeout(() => {
+                newGameStatus.textContent = 'Not clicked';
+            }, 2000);
+        });
+        
+        // Game state test
+        const winBtn = document.getElementById('test-win');
+        const drawBtn = document.getElementById('test-draw');
+        const resetBtn = document.getElementById('test-reset');
+        const gameState = document.getElementById('game-state');
+        
+        winBtn.addEventListener('click', () => {
+            gameState.textContent = 'Winner!';
+        });
+        
+        drawBtn.addEventListener('click', () => {
+            gameState.textContent = 'Draw!';
+        });
+        
+        resetBtn.addEventListener('click', () => {
+            gameState.textContent = 'Playing';
+        });
+        
+        console.log('UI Test page loaded successfully');
+    </script>
+</body>
+</html>
