@@ -26,7 +26,6 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/tictactoe-app
-  DOCKER_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
 jobs:
   # Test and Quality Assurance
@@ -50,17 +49,14 @@ jobs:
     
     - name: Install dependencies
       run: |
-        # Check if package-lock.json is in sync with package.json
-        if ! npm ci --dry-run; then
-          echo "Package-lock.json is out of sync. Updating..."
-          npm install
-        else
-          npm ci
-        fi
+        # Use the npm retry script for robust dependency installation
+        chmod +x scripts/npm-retry.sh
+        ./scripts/npm-retry.sh install
     
     - name: Run linting
       run: |
-        npm install -g eslint
+        # Install eslint with retry logic
+        ./scripts/npm-retry.sh retry npm install -g eslint
         eslint *.js public/*.js || echo "Linting completed"
     
     - name: Run tests

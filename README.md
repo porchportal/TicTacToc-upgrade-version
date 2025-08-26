@@ -48,6 +48,9 @@ See [Architecture Diagram](architecture-diagram.md) for detailed system design a
    
    # Fix package-lock.json if out of sync
    npm run fix-deps
+   
+   # Install dependencies with retry logic (handles rate limiting)
+   npm run install-retry
    ```
 
 4. **Start the development server**
@@ -356,11 +359,17 @@ TicTacGame-main/
    - **Prevention**: Run `npm run check-deps` before committing changes
    - **Note**: The CI/CD pipeline now automatically handles this issue
 
-2. **Database connection errors**
+2. **npm rate limiting errors (HTTP 429)**
+   - **Error**: `npm ERR! 429 Too Many Requests`
+   - **Solution**: Use `npm run install-retry` for robust installation with retry logic
+   - **Prevention**: The CI/CD pipeline uses retry logic to handle rate limiting
+   - **Note**: The npm retry script automatically handles exponential backoff
+
+3. **Database connection errors**
    - Ensure SQLite is properly initialized
    - Check file permissions for database file
 
-3. **Kubernetes deployment issues**
+4. **Kubernetes deployment issues**
    - Verify cluster is running: `kubectl cluster-info`
    - Check pod logs: `kubectl logs -n tictactoe <pod-name>`
    - Verify service: `kubectl get svc -n tictactoe`

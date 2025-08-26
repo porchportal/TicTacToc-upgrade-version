@@ -9,7 +9,9 @@
     "test": "jest",
     "build": "echo 'Build completed'",
     "check-deps": "./scripts/check-deps.sh",
-    "fix-deps": "./scripts/check-deps.sh --fix"
+    "fix-deps": "./scripts/check-deps.sh --fix",
+    "npm-retry": "./scripts/npm-retry.sh",
+    "install-retry": "./scripts/npm-retry.sh install"
   },
   "dependencies": {
     "express": "^4.18.2",

@@ -35,13 +35,9 @@ jobs:
     
     - name: Install dependencies
       run: |
-        # Check if package-lock.json is in sync with package.json
-        if ! npm ci --dry-run; then
-          echo "Package-lock.json is out of sync. Updating..."
-          npm install
-        else
-          npm ci
-        fi
+        # Use the npm retry script for robust dependency installation
+        chmod +x scripts/npm-retry.sh
+        ./scripts/npm-retry.sh install
     
     - name: Run tests
       run: npm test
