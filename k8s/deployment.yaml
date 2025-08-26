@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tictactoe-app
+  labels:
+    app: tictactoe-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tictactoe-app
+  template:
+    metadata:
+      labels:
+        app: tictactoe-app
+    spec:
+      containers:
+      - name: tictactoe-app
+        image: tictactoe-app:latest
+        ports:
+        - containerPort: 3000
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: tictactoe-data
+          mountPath: /app/data
+        env:
+        - name: DB_PATH
+          value: "/app/data/tictactoe.db"
+      volumes:
+      - name: tictactoe-data
+        persistentVolumeClaim:
+          claimName: tictactoe-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tictactoe-service
+spec:
+  selector:
+    app: tictactoe-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+  type: LoadBalancer
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: tictactoe-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: tictactoe-app
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tictactoe-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
