@@ -18,9 +18,14 @@ on:
         - production
         - development
 
+# Set permissions for GitHub Container Registry
+permissions:
+  contents: read
+  packages: write
+
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository_owner }}/tictactoe-app
   DOCKER_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
 jobs:
