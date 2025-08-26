@@ -71,7 +71,9 @@ This is a full-stack TicTacToe game application with the following components:
   - Realistic game scenarios
 
 ## Architecture Diagram
-
+![Low Level Details & Key Files](image_low.png)
+![Mid Level Components](image_mid.png)
+![High Level Architecture](image_high.png)
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Client Browser                           │
