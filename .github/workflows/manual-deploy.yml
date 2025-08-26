@@ -160,7 +160,7 @@ jobs:
         echo "Using image tag: ${{ steps.image-tag.outputs.tag }}"
         
         # Update the deployment with new image
-        kubectl set image deployment/tictactoe-app tictactoe-app=ghcr.io/${{ env.IMAGE_NAME }}:${{ steps.image-tag.outputs.tag }} -n tictactoe
+        kubectl set image deployment/tictactoe-app tictactoe-app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.image-tag.outputs.tag }} -n tictactoe
     
     - name: Wait for rollout
       run: |
