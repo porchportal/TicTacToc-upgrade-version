@@ -96,26 +96,6 @@ docker-compose -f docker-compose.dev.yml down --timeout 0
 3. **Access the application**
    - Open http://localhost:3000 in your browser
 
-### Kubernetes Deployment
-
-1. **Apply Kubernetes manifests**
-   ```bash
-   kubectl apply -f k8s/namespace.yaml
-   kubectl apply -f k8s/deployment.yaml
-   ```
-
-2. **Check deployment status**
-   ```bash
-   kubectl get pods -n tictactoe
-   kubectl get services -n tictactoe
-   kubectl get hpa -n tictactoe
-   ```
-
-3. **Access the application**
-   ```bash
-   kubectl port-forward service/tictactoe-service 8080:80 -n tictactoe
-   ```
-   - Open http://localhost:8080 in your browser
 
 ## 🧪 Testing
 
