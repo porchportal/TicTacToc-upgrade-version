@@ -149,8 +149,8 @@ jobs:
     - name: Deploy with Docker Compose
       run: |
         echo "Deploying to staging environment..."
-        docker-compose -f docker-compose.staging.yml pull
-        docker-compose -f docker-compose.staging.yml up -d
+        docker compose -f docker-compose.staging.yml pull
+        docker compose -f docker-compose.staging.yml up -d
     
     - name: Wait for deployment
       run: |

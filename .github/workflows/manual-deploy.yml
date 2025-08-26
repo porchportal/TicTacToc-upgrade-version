@@ -64,9 +64,9 @@ jobs:
     - name: Deploy with Docker Compose
       run: |
         echo "Deploying to development environment..."
-        docker-compose -f docker-compose.dev.yml down
-        docker-compose -f docker-compose.dev.yml pull
-        docker-compose -f docker-compose.dev.yml up -d
+        docker compose -f docker-compose.dev.yml down
+        docker compose -f docker-compose.dev.yml pull
+        docker compose -f docker-compose.dev.yml up -d
     
     - name: Wait for deployment
       run: |
@@ -108,9 +108,9 @@ jobs:
         # Update the image tag in docker-compose
         sed -i "s/:latest/:${{ steps.image-tag.outputs.tag }}/g" docker-compose.staging.yml
         
-        docker-compose -f docker-compose.staging.yml down
-        docker-compose -f docker-compose.staging.yml pull
-        docker-compose -f docker-compose.staging.yml up -d
+        docker compose -f docker-compose.staging.yml down
+        docker compose -f docker-compose.staging.yml pull
+        docker compose -f docker-compose.staging.yml up -d
     
     - name: Wait for deployment
       run: |

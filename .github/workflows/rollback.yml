@@ -67,9 +67,9 @@ jobs:
         # Update the image tag in docker-compose
         sed -i "s/:latest/:${{ github.event.inputs.previous_tag }}/g" docker-compose.staging.yml
         
-        docker-compose -f docker-compose.staging.yml down
-        docker-compose -f docker-compose.staging.yml pull
-        docker-compose -f docker-compose.staging.yml up -d
+        docker compose -f docker-compose.staging.yml down
+        docker compose -f docker-compose.staging.yml pull
+        docker compose -f docker-compose.staging.yml up -d
     
     - name: Wait for rollback
       run: |
