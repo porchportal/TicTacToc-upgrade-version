@@ -585,7 +585,13 @@ TicTacGame-main/
    - **Benefits**: No external cluster dependencies, easier setup, faster deployment
    - **Note**: Docker Compose is perfect for this application scale and complexity
 
-9. **General Kubernetes issues**
+9. **Load test job isolation issues**
+   - **Error**: Load test job couldn't connect to services in separate runners
+   - **Solution**: Moved load tests into the same job as deployment
+   - **Benefits**: Load tests now run in the same environment as the application
+   - **Note**: Each deployment job now includes its own load testing
+
+10. **General Kubernetes issues**
    - Verify cluster is running: `kubectl cluster-info`
    - Check pod logs: `kubectl logs -n tictactoe <pod-name>`
    - Verify service: `kubectl get svc -n tictactoe`

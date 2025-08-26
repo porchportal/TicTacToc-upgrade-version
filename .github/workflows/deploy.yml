@@ -188,6 +188,25 @@ jobs:
         curl -f http://localhost:3000/ -o /dev/null -w "HTTP Status: %{http_code}\n"
         
         echo "Smoke tests passed!"
+    
+    - name: Run load test
+      run: |
+        echo "Running staging load test..."
+        
+        # Install k6
+        curl -L https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-amd64.tar.gz | tar xz
+        sudo cp k6-v0.47.0-linux-amd64/k6 /usr/local/bin/
+        
+        # Run load test
+        k6 run load-test.js --out json=staging-results.json
+        
+        echo "✅ Staging load test completed!"
+    
+    - name: Upload staging test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: staging-test-results-${{ github.run_number }}
+        path: staging-results.json
 
   # Deploy to Production
   deploy-production:
@@ -257,9 +276,9 @@ jobs:
         name: production-test-results-${{ github.run_number }}
         path: results.json
 
-  # Load Testing
-  load-test:
-    name: Load Testing
+  # Performance monitoring
+  performance:
+    name: Performance Monitoring
     runs-on: ubuntu-latest
     needs: [deploy-staging, deploy-production]
     if: always() && (needs.deploy-staging.result == 'success' || needs.deploy-production.result == 'success')
@@ -268,72 +287,39 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Run load test against deployed services
-      run: |
-        echo "Running load test against deployed services..."
-        
-        # Install k6
-        curl -L https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-amd64.tar.gz | tar xz
-        sudo cp k6-v0.47.0-linux-amd64/k6 /usr/local/bin/
-        
-        # Set target URL (using localhost since we're testing the deployed service)
-        TARGET_URL="http://localhost:3000"
-        export TARGET_URL
-        
-        # Health check before load test
-        echo "Performing health check on $TARGET_URL..."
-        for i in {1..30}; do
-          if curl -s "$TARGET_URL/health" >/dev/null 2>&1; then
-            echo "Service is healthy and ready for load testing!"
-            break
-          fi
-          echo "Attempt $i/30: Service not ready yet..."
-          sleep 5
-        done
-        
-        # Run load test
-        k6 run load-test.js --out json=results.json
-        
-        echo "✅ Load test completed!"
-    
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      with:
-        name: k6-results-${{ github.run_number }}
-        path: results.json
-        retention-days: 90
-
-  # Performance monitoring
-  performance:
-    name: Performance Monitoring
-    runs-on: ubuntu-latest
-    needs: load-test
-    if: always() && needs.load-test.result == 'success'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Download test results
+    - name: Download staging test results
       uses: actions/download-artifact@v4
       with:
-        name: k6-results-${{ github.run_number }}
+        name: staging-test-results-${{ github.run_number }}
+    
+    - name: Download production test results
+      uses: actions/download-artifact@v4
+      with:
+        name: production-test-results-${{ github.run_number }}
     
     - name: Analyze performance
       run: |
         echo "Analyzing performance results..."
-        if [ -f results.json ]; then
-          echo "Test results found"
+        
+        if [ -f staging-results.json ]; then
+          echo "Staging test results found"
           # Add performance analysis logic here
         else
-          echo "No test results found"
+          echo "No staging test results found"
+        fi
+        
+        if [ -f results.json ]; then
+          echo "Production test results found"
+          # Add performance analysis logic here
+        else
+          echo "No production test results found"
         fi
 
   # Notifications
   notify:
     name: Send Notifications
     runs-on: ubuntu-latest
-    needs: [deploy-staging, deploy-production, load-test]
+    needs: [deploy-staging, deploy-production]
     if: always()
     
     steps:
@@ -355,4 +341,3 @@ jobs:
         echo "- **Build**: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Staging**: ${{ needs.deploy-staging.result }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Production**: ${{ needs.deploy-production.result }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Load Test**: ${{ needs.load-test.result }}" >> $GITHUB_STEP_SUMMARY
