@@ -254,9 +254,40 @@ jobs:
     - name: Get service URL
       id: service-url
       run: |
-        SERVICE_URL=$(kubectl get service tictactoe-service -n tictactoe -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        # Wait for service to be ready
+        echo "Waiting for service to be ready..."
+        kubectl wait --for=condition=ready pod -l app=tictactoe-app -n tictactoe --timeout=300s
+        
+        # Get service URL with fallback
+        SERVICE_URL=$(kubectl get service tictactoe-service -n tictactoe -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+        
+        if [ -z "$SERVICE_URL" ]; then
+          echo "LoadBalancer IP not available, trying NodePort..."
+          SERVICE_URL=$(kubectl get service tictactoe-service -n tictactoe -o jsonpath='{.spec.clusterIP}' 2>/dev/null || echo "")
+          if [ -n "$SERVICE_URL" ]; then
+            PORT=$(kubectl get service tictactoe-service -n tictactoe -o jsonpath='{.spec.ports[0].port}' 2>/dev/null || echo "3000")
+            SERVICE_URL="$SERVICE_URL:$PORT"
+          fi
+        fi
+        
+        if [ -z "$SERVICE_URL" ]; then
+          echo "Could not determine service URL, using localhost"
+          SERVICE_URL="localhost:3000"
+        fi
+        
         echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
         echo "Testing URL: $SERVICE_URL"
+        
+        # Health check before load test
+        echo "Performing health check..."
+        for i in {1..30}; do
+          if curl -s "http://$SERVICE_URL/health" >/dev/null 2>&1; then
+            echo "Service is healthy and ready for load testing!"
+            break
+          fi
+          echo "Attempt $i/30: Service not ready yet..."
+          sleep 5
+        done
     
     - name: Run k6 load test
       uses: grafana/k6-action@v0.3.0

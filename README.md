@@ -65,12 +65,24 @@ See [Architecture Diagram](architecture-diagram.md) for detailed system design a
    npm run docker-build-prod
    ```
 
-5. **Start the development server**
+5. **Run load tests**
+   ```bash
+   # Run load test (1 minute, 10 users)
+   npm run load-test
+   
+   # Run quick load test (30 seconds, 5 users)
+   npm run load-test-quick
+   
+   # Custom load test
+   ./scripts/test-load.sh --url http://localhost:3000 --duration 2m --users 20
+   ```
+
+6. **Start the development server**
    ```bash
    npm run dev
    ```
 
-6. **Access the application**
+7. **Access the application**
    - Open http://localhost:3000 in your browser
    - Health check: http://localhost:3000/health
 
@@ -507,11 +519,17 @@ TicTacGame-main/
    - **Prevention**: Updated `.dockerignore` to exclude only unnecessary files
    - **Note**: The `public` directory is now properly included in Docker builds
 
-5. **Database connection errors**
+5. **Load test job failures in CI/CD**
+   - **Error**: `curl: (7) Failed to connect to localhost port 3000`
+   - **Solution**: Moved load test into the same job as deployment
+   - **Prevention**: Load tests now run in the same environment as the application
+   - **Note**: CI/CD workflows now properly handle service availability
+
+6. **Database connection errors**
    - Ensure SQLite is properly initialized
    - Check file permissions for database file
 
-6. **Kubernetes deployment issues**
+7. **Kubernetes deployment issues**
    - Verify cluster is running: `kubectl cluster-info`
    - Check pod logs: `kubectl logs -n tictactoe <pod-name>`
    - Verify service: `kubectl get svc -n tictactoe`

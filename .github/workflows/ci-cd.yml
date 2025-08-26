@@ -121,30 +121,19 @@ jobs:
         curl -f http://localhost:3000/ -o /dev/null -w "HTTP Status: %{http_code}\n"
         
         echo "✅ Smoke tests passed!"
-
-  load-test:
-    needs: deploy
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Wait for service to be ready
+    - name: Run load test
       run: |
-        # Wait for Docker Compose to be ready
-        sleep 10
+        echo "Running load test..."
         
-        # Health check
-        curl -f http://localhost:3000/health || exit 1
-    
-    - name: Run k6 load test
-      uses: grafana/k6-action@v0.3.0
-      with:
-        filename: load-test.js
-        flags: --out json=results.json
-      env:
-        TARGET_URL: http://localhost:3000
+        # Install k6
+        curl -L https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-amd64.tar.gz | tar xz
+        sudo cp k6-v0.47.0-linux-amd64/k6 /usr/local/bin/
+        
+        # Run load test
+        k6 run load-test.js --out json=results.json
+        
+        echo "✅ Load test completed!"
     
     - name: Upload test results
       uses: actions/upload-artifact@v4
