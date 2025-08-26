@@ -96,12 +96,12 @@ run_docker_compose() {
     
     if [ "$mode" = "development" ]; then
         print_status "Starting application with Docker Compose (Development mode)..."
-        docker-compose -f docker-compose.dev.yml up -d
+        docker compose -f docker-compose.dev.yml up -d
         print_success "Application started with Docker Compose (Development mode)"
         print_status "Hot reload enabled with nodemon"
     else
         print_status "Starting application with Docker Compose (Production mode)..."
-        docker-compose up -d
+        docker compose up -d
         print_success "Application started with Docker Compose (Production mode)"
     fi
     
