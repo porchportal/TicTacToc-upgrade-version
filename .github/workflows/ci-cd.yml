@@ -47,8 +47,7 @@ jobs:
       run: npm test
     
     - name: Run linting
-      run: |
-        npx eslint *.js public/*.js || true
+      run: npm run lint || true
 
   build:
     needs: test
