@@ -11,7 +11,10 @@
     "check-deps": "./scripts/check-deps.sh",
     "fix-deps": "./scripts/check-deps.sh --fix",
     "npm-retry": "./scripts/npm-retry.sh",
-    "install-retry": "./scripts/npm-retry.sh install"
+    "install-retry": "./scripts/npm-retry.sh install",
+    "docker-build": "./scripts/build-docker.sh",
+    "docker-build-test": "./scripts/build-docker.sh --test",
+    "docker-build-prod": "./scripts/build-docker.sh --dockerfile Dockerfile.production --test"
   },
   "dependencies": {
     "express": "^4.18.2",

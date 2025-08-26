@@ -10,8 +10,16 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install --omit=dev
+# Configure npm for better rate limiting handling
+RUN npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retries 5 && \
+    npm config set registry https://registry.npmjs.org/
+
+# Install dependencies with retry logic
+RUN npm ci --omit=dev --retry 5 --retry-delay 5000 || \
+    (sleep 10 && npm ci --omit=dev --retry 5 --retry-delay 10000) || \
+    (sleep 30 && npm ci --omit=dev --retry 5 --retry-delay 15000)
 
 # Copy application code
 COPY . .

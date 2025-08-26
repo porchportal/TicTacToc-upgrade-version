@@ -53,12 +53,24 @@ See [Architecture Diagram](architecture-diagram.md) for detailed system design a
    npm run install-retry
    ```
 
-4. **Start the development server**
+4. **Build Docker image (with npm rate limiting handling)**
+   ```bash
+   # Build Docker image with retry logic
+   npm run docker-build
+   
+   # Build and test Docker image
+   npm run docker-build-test
+   
+   # Build production image with multi-stage build
+   npm run docker-build-prod
+   ```
+
+5. **Start the development server**
    ```bash
    npm run dev
    ```
 
-5. **Access the application**
+6. **Access the application**
    - Open http://localhost:3000 in your browser
    - Health check: http://localhost:3000/health
 
@@ -483,11 +495,17 @@ TicTacGame-main/
    - **Prevention**: The CI/CD pipeline uses retry logic to handle rate limiting
    - **Note**: The npm retry script automatically handles exponential backoff
 
-3. **Database connection errors**
+3. **Docker build failures due to npm rate limiting**
+   - **Error**: `npm error 429 Too Many Requests` during Docker build
+   - **Solution**: Use `npm run docker-build` which includes retry logic
+   - **Prevention**: Updated Dockerfile with npm configuration and retry logic
+   - **Note**: Docker builds now automatically retry failed npm installations
+
+4. **Database connection errors**
    - Ensure SQLite is properly initialized
    - Check file permissions for database file
 
-4. **Kubernetes deployment issues**
+5. **Kubernetes deployment issues**
    - Verify cluster is running: `kubectl cluster-info`
    - Check pod logs: `kubectl logs -n tictactoe <pod-name>`
    - Verify service: `kubectl get svc -n tictactoe`

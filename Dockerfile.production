@@ -1,0 +1,73 @@
+# Multi-stage build for production
+FROM node:18-alpine AS builder
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Configure npm for better rate limiting handling
+RUN npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retries 5 && \
+    npm config set registry https://registry.npmjs.org/
+
+# Install all dependencies (including dev dependencies for build)
+RUN npm ci --retry 5 --retry-delay 5000 || \
+    (sleep 10 && npm ci --retry 5 --retry-delay 10000) || \
+    (sleep 30 && npm ci --retry 5 --retry-delay 15000)
+
+# Copy application code
+COPY . .
+
+# Production stage
+FROM node:18-alpine AS production
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Configure npm for better rate limiting handling
+RUN npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retries 5 && \
+    npm config set registry https://registry.npmjs.org/
+
+# Install only production dependencies with retry logic
+RUN npm ci --omit=dev --retry 5 --retry-delay 5000 || \
+    (sleep 10 && npm ci --omit=dev --retry 5 --retry-delay 10000) || \
+    (sleep 30 && npm ci --omit=dev --retry 5 --retry-delay 15000)
+
+# Copy application code from builder stage
+COPY --from=builder /app/server.js ./
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/data ./data
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Create database directory and set permissions
+RUN mkdir -p /app/data && \
+    chown -R nodejs:nodejs /app
+
+USER nodejs
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# Start the application
+CMD ["npm", "start"]
