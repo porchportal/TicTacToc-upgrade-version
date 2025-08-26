@@ -82,27 +82,25 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: 'latest'
-    
-    - name: Configure kubectl
+    - name: Deploy with Docker Compose
       run: |
-        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig.yaml
-        export KUBECONFIG=kubeconfig.yaml
+        echo "Deploying with Docker Compose..."
+        docker-compose up -d
+        
+        # Wait for deployment
+        sleep 30
+        
+        # Health check
+        curl -f http://localhost:3000/health || exit 1
+        
+        echo "✅ Deployment successful!"
     
-    - name: Deploy to Kubernetes
+    - name: Run smoke tests
       run: |
-        kubectl apply -f k8s/namespace.yaml
-        kubectl apply -f k8s/deployment.yaml
-        kubectl rollout status deployment/tictactoe-app -n tictactoe
-    
-    - name: Verify deployment
-      run: |
-        kubectl get pods -n tictactoe
-        kubectl get services -n tictactoe
-        kubectl get hpa -n tictactoe
+        echo "Running smoke tests..."
+        curl -f http://localhost:3000/health
+        curl -f http://localhost:3000/
+        echo "✅ Smoke tests passed!"
 
   load-test:
     needs: deploy
@@ -112,25 +110,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: 'latest'
-    
-    - name: Configure kubectl
-      run: |
-        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig.yaml
-        export KUBECONFIG=kubeconfig.yaml
-    
     - name: Wait for service to be ready
       run: |
-        kubectl wait --for=condition=ready pod -l app=tictactoe-app -n tictactoe --timeout=300s
-    
-    - name: Get service URL
-      id: service-url
-      run: |
-        SERVICE_URL=$(kubectl get service tictactoe-service -n tictactoe -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-        echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
+        # Wait for Docker Compose to be ready
+        sleep 10
+        
+        # Health check
+        curl -f http://localhost:3000/health || exit 1
     
     - name: Run k6 load test
       uses: grafana/k6-action@v0.3.0
@@ -138,7 +124,7 @@ jobs:
         filename: load-test.js
         flags: --out json=results.json
       env:
-        TARGET_URL: ${{ steps.service-url.outputs.url }}
+        TARGET_URL: http://localhost:3000
     
     - name: Upload test results
       uses: actions/upload-artifact@v4
