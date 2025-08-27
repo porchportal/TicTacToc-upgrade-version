@@ -1,0 +1,40 @@
+{
+  "autoScalingConfig": {
+    "targetTracking": {
+      "cpu": {
+        "targetValue": 80,
+        "scaleInCooldown": 300,
+        "scaleOutCooldown": 300,
+        "enabled": true
+      },
+      "memory": {
+        "targetValue": 80,
+        "scaleInCooldown": 300,
+        "scaleOutCooldown": 300,
+        "enabled": true
+      }
+    },
+    "scheduled": {
+      "enabled": false
+    },
+    "capacity": {
+      "minCapacity": 1,
+      "maxCapacity": 3,
+      "desiredCapacity": 1
+    },
+    "alarms": {
+      "cpu": {
+        "threshold": 85,
+        "evaluationPeriods": 2,
+        "period": 300,
+        "enabled": true
+      },
+      "memory": {
+        "threshold": 85,
+        "evaluationPeriods": 2,
+        "period": 300,
+        "enabled": true
+      }
+    }
+  }
+}
