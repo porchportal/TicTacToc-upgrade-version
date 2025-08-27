@@ -11,17 +11,18 @@ services:
       - DB_PATH=/app/data/tictactoe.db
     volumes:
       - ./data:/app/data
-      - ./public:/app/public:ro
+      # - ./public:/app/public:ro
     restart: unless-stopped
-    stop_grace_period: 30s
-    stop_signal: SIGTERM
-    command: ["npm", "start"]
+    # stop_grace_period: 30s
+    # stop_signal: SIGTERM
+    # command: ["npm", "start"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 60s
+    user: "root"
 
   # Optional: Add a simple load balancer for testing
   nginx:
