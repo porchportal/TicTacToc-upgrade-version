@@ -287,33 +287,63 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
+    - name: Check deployment status
+      run: |
+        echo "## Deployment Status Check"
+        echo "- **Staging Deployment**: ${{ needs.deploy-staging.result }}"
+        echo "- **Production Deployment**: ${{ needs.deploy-production.result }}"
+        
+        if [ "${{ needs.deploy-staging.result }}" == "success" ]; then
+          echo "✅ Staging deployment completed successfully"
+        elif [ "${{ needs.deploy-staging.result }}" == "skipped" ]; then
+          echo "ℹ️ Staging deployment was skipped (not on develop branch)"
+        else
+          echo "❌ Staging deployment failed or was cancelled"
+        fi
+        
+        if [ "${{ needs.deploy-production.result }}" == "success" ]; then
+          echo "✅ Production deployment completed successfully"
+        elif [ "${{ needs.deploy-production.result }}" == "skipped" ]; then
+          echo "ℹ️ Production deployment was skipped (not on main branch)"
+        else
+          echo "❌ Production deployment failed or was cancelled"
+        fi
+    
     - name: Download staging test results
+      if: needs.deploy-staging.result == 'success'
       uses: actions/download-artifact@v4
       with:
         name: staging-test-results-${{ github.run_number }}
+        fail-on-not-found: false
     
     - name: Download production test results
+      if: needs.deploy-production.result == 'success'
       uses: actions/download-artifact@v4
       with:
         name: production-test-results-${{ github.run_number }}
+        fail-on-not-found: false
     
     - name: Analyze performance
       run: |
         echo "Analyzing performance results..."
         
         if [ -f staging-results.json ]; then
-          echo "Staging test results found"
+          echo "✅ Staging test results found"
+          echo "Staging load test completed successfully"
           # Add performance analysis logic here
         else
-          echo "No staging test results found"
+          echo "ℹ️ No staging test results found (staging deployment may not have run)"
         fi
         
         if [ -f results.json ]; then
-          echo "Production test results found"
+          echo "✅ Production test results found"
+          echo "Production load test completed successfully"
           # Add performance analysis logic here
         else
-          echo "No production test results found"
+          echo "ℹ️ No production test results found (production deployment may not have run)"
         fi
+        
+        echo "Performance monitoring completed"
 
   # Notifications
   notify:

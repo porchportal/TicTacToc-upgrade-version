@@ -591,7 +591,13 @@ TicTacGame-main/
    - **Benefits**: Load tests now run in the same environment as the application
    - **Note**: Each deployment job now includes its own load testing
 
-10. **General Kubernetes issues**
+10. **Artifact download failures**
+    - **Error**: `Artifact not found` when trying to download test results
+    - **Solution**: Added conditional artifact downloads with `fail-on-not-found: false`
+    - **Benefits**: Performance monitoring works even when some deployments are skipped
+    - **Note**: Only downloads artifacts from successful deployments
+
+11. **General Kubernetes issues**
    - Verify cluster is running: `kubectl cluster-info`
    - Check pod logs: `kubectl logs -n tictactoe <pod-name>`
    - Verify service: `kubectl get svc -n tictactoe`
