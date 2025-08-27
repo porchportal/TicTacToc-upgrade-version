@@ -19,6 +19,35 @@ This project transforms a simple TicTacToe game into a production-ready full-sta
 
 See [Architecture Diagram](architecture-diagram.md) for detailed system design and component interactions.
 
+### 🎓 **AWS Academy Architecture**
+
+For AWS Academy deployments, we use a comprehensive architecture with:
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Load Balancer │───▶│  Auto Scaling   │───▶│   EC2 Instances │
+│   (ALB)         │    │   Group (ASG)   │    │   (t2.micro)    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   CloudWatch    │    │   Docker        │    │   SQLite        │
+│   Monitoring    │    │   Containers    │    │   Database      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+**Services Used:**
+- **EC2**: Application hosting (t2.micro - Free Tier)
+- **Docker**: Containerization with ECR repository
+- **Load Testing**: k6 performance testing
+- **Auto-scaling**: ASG with ALB for scalability
+- **Load Balancer**: Application Load Balancer for traffic distribution
+- **CloudWatch**: Monitoring with metrics, alarms, dashboards
+- **ECR**: Container registry for Docker image storage
+- **VPC**: Networking with default VPC and subnets
+- **Security Groups**: Security with ALB and EC2 rules
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -182,6 +211,25 @@ docker-compose -f docker-compose.dev.yml down --timeout 0
 - AWS CLI configured with appropriate permissions
 - Docker installed and running
 - Terraform (optional, for infrastructure as code)
+
+#### 🎓 **AWS Academy Cloud Operations - Sandbox Environment**
+
+For AWS Academy students, we provide comprehensive deployment guides specifically designed for the Academy environment:
+
+- **[Complete Deployment Guide](aws/AWS_ACADEMY_DEPLOYMENT_GUIDE.md)** - Full step-by-step guide with EC2, Docker, Load Testing, Auto-scaling, and monitoring
+- **[Quick Reference](aws/ACADEMY_QUICK_REFERENCE.md)** - Command reference and quick deployment steps
+- **[Manual Deployment](aws/manual-academy-deployment.md)** - Manual step-by-step deployment avoiding automation issues
+
+**Academy Features:**
+- ✅ **EC2 Instances** (t2.micro - Free Tier)
+- ✅ **Docker Containerization** with ECR
+- ✅ **Load Testing** with k6 performance testing
+- ✅ **Auto-scaling** with Application Load Balancer + Auto Scaling Group
+- ✅ **Monitoring** with CloudWatch metrics and alarms
+- ✅ **Database** persistence with SQLite
+- ✅ **Security** with Security Groups and IAM roles
+
+**Estimated Cost:** ~$25-50/month (within Academy budget)
 
 #### Option 1: Manual AWS ECS Deployment
 
@@ -380,6 +428,37 @@ npm test
 k6 run load-test.js
 ```
 
+### 🎓 **AWS Academy Load Testing**
+
+For AWS Academy deployments, we provide comprehensive load testing scenarios:
+
+**Basic Load Test:**
+```bash
+# Run basic load test (2m ramp-up, 5m steady, 2m ramp-down)
+k6 run aws/load-test.js
+```
+
+**Stress Test:**
+```bash
+# Run stress test (1m ramp, 2m at 20 users, 1m ramp-down)
+k6 run aws/stress-test.js
+```
+
+**Spike Test:**
+```bash
+# Run spike test (sudden traffic increase)
+k6 run aws/spike-test.js
+```
+
+**Load Testing Features:**
+- ✅ **Health endpoint testing**
+- ✅ **Main application testing**
+- ✅ **API endpoint testing**
+- ✅ **Game creation testing**
+- ✅ **Performance thresholds**
+- ✅ **Error rate monitoring**
+- ✅ **Response time analysis**
+
 ### API Testing
 ```bash
 # Test health endpoint
@@ -492,6 +571,34 @@ Set up the following GitHub secrets:
 - **CPU threshold**: 70%
 - **Memory threshold**: 80%
 
+### 🎓 **AWS Academy Auto-scaling**
+
+For AWS Academy deployments, we provide comprehensive auto-scaling capabilities:
+
+**Auto Scaling Group Configuration:**
+- **Minimum instances**: 1 (t2.micro)
+- **Maximum instances**: 3 (t2.micro)
+- **Desired capacity**: 1
+- **Health check grace period**: 300 seconds
+
+**Scaling Policies:**
+- **Scale-out**: CPU utilization > 80% for 2 evaluation periods
+- **Scale-in**: CPU utilization < 60% for 2 evaluation periods
+- **Cooldown period**: 300 seconds
+
+**CloudWatch Alarms:**
+- **CPU Utilization**: Triggers scaling based on CPU usage
+- **Request Count**: Monitors application load
+- **Response Time**: Tracks application performance
+
+**Auto-scaling Features:**
+- ✅ **CPU-based scaling** (80% threshold)
+- ✅ **Health checks** with grace period
+- ✅ **Cooldown periods** to prevent thrashing
+- ✅ **CloudWatch integration** for monitoring
+- ✅ **Load balancer integration** for traffic distribution
+- ✅ **Cost optimization** with t2.micro instances
+
 ### Health Checks
 
 - **Liveness probe**: `/health` endpoint
@@ -520,6 +627,13 @@ TicTacGame-main/
 │   ├── index.html         # Main HTML file
 │   ├── style.css          # CSS styles
 │   └── script.js          # Frontend JavaScript
+├── aws/                   # AWS deployment guides
+│   ├── AWS_ACADEMY_DEPLOYMENT_GUIDE.md    # Complete Academy guide
+│   ├── ACADEMY_QUICK_REFERENCE.md         # Quick reference
+│   ├── manual-academy-deployment.md       # Manual deployment
+│   ├── deploy.sh                          # ECS deployment script
+│   ├── terraform/                         # Infrastructure as code
+│   └── manage-auto-scaling.sh             # Auto-scaling management
 ├── k8s/                   # Kubernetes manifests
 │   ├── namespace.yaml     # Namespace definition
 │   └── deployment.yaml    # Deployment, service, HPA
@@ -539,7 +653,15 @@ TicTacGame-main/
 
 ### Common Issues
 
-1. **npm ci failures in CI/CD**
+1. **AWS Academy Deployment Issues**
+   - **ECR Access Denied**: Academy environment may have ECR restrictions
+   - **Solution**: Use EC2 deployment with Docker Compose instead
+   - **Resource Limits**: Academy has specific resource limitations
+   - **Solution**: Use t2.micro instances and minimal resources
+   - **Session Timeouts**: Academy sessions have time limits
+   - **Solution**: Always clean up resources before session ends
+
+2. **npm ci failures in CI/CD**
    - **Error**: `npm ci` fails with package-lock.json sync issues
    - **Solution**: Run `npm run fix-deps` to update package-lock.json
    - **Prevention**: Run `npm run check-deps` before committing changes
@@ -601,6 +723,14 @@ TicTacGame-main/
    - Verify cluster is running: `kubectl cluster-info`
    - Check pod logs: `kubectl logs -n tictactoe <pod-name>`
    - Verify service: `kubectl get svc -n tictactoe`
+
+12. **AWS Academy specific issues**
+   - **ECR permissions**: Use EC2 deployment instead of ECR
+   - **Resource quotas**: Check Academy service quotas
+   - **Network issues**: Use default VPC and subnets
+   - **Session expiry**: Clean up resources before timeout
+   - **Load balancer**: Ensure ALB is properly configured
+   - **Auto scaling**: Verify CloudWatch alarms are set up
 
 3. **Load testing failures**
    - Ensure application is accessible
