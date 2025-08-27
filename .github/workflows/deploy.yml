@@ -314,14 +314,14 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: staging-test-results-${{ github.run_number }}
-        fail-on-not-found: false
+      continue-on-error: true
     
     - name: Download production test results
       if: needs.deploy-production.result == 'success'
       uses: actions/download-artifact@v4
       with:
         name: production-test-results-${{ github.run_number }}
-        fail-on-not-found: false
+      continue-on-error: true
     
     - name: Analyze performance
       run: |

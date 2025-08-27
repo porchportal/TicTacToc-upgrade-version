@@ -593,7 +593,7 @@ TicTacGame-main/
 
 10. **Artifact download failures**
     - **Error**: `Artifact not found` when trying to download test results
-    - **Solution**: Added conditional artifact downloads with `fail-on-not-found: false`
+    - **Solution**: Added conditional artifact downloads with `continue-on-error: true`
     - **Benefits**: Performance monitoring works even when some deployments are skipped
     - **Note**: Only downloads artifacts from successful deployments
 
