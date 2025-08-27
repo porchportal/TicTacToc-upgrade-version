@@ -11,6 +11,7 @@ services:
       - DB_PATH=/app/data/tictactoe.db
     volumes:
       - ./data:/app/data
+      - ./public:/app/public:ro
     restart: unless-stopped
     stop_grace_period: 30s
     stop_signal: SIGTERM
